@@ -662,7 +662,7 @@ struct HybridAdoptorBase
     const RealType cB      = M_PI * std::pow( x / cD , ctwo );
     const RealType cC      = std::cos( cB );
     const RealType cS      = std::sin( cB );
-    const RealType cA      = cone - cC;
+    const RealType cA      = cone + cC;
     const RealType two_pi_xsq = ctwo * M_PI * std::pow( x , ctwo ) ;
     df_dr                 = - M_PI * x * cA * cS / std::pow( cD, ctwo );
     d2f_dr2               = (std::pow( cS, ctwo ) - cC * cA ) ;
