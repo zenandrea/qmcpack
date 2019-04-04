@@ -632,16 +632,44 @@ struct HybridAdoptorBase
 
   inline RealType smooth_function(const ST& cutoff_buffer, const ST& cutoff, RealType r)
   {
-    const RealType cone(1), ctwo(2), chalf(0.5);
-    if (r < cutoff_buffer)
+    const RealType czero(0.0), cone(1), ctwo(2), chalf(0.5), cfourth(0.25), cfour(4);
+    if (r < cutoff_buffer) {
+      df_dr     = czero;
+      d2f_dr2   = czero;
       return cone;
-    const RealType scale  = ctwo / (cutoff - cutoff_buffer);
-    const RealType x      = (r - cutoff_buffer) * scale - cone;
-    const RealType cosh_x = std::cosh(x);
-    const RealType tanh_x = std::tanh(x);
-    df_dr                 = -chalf / (cosh_x * cosh_x) * scale;
-    d2f_dr2               = -ctwo * tanh_x * df_dr * scale;
-    return chalf * (cone - tanh_x);
+    } else if (r > cutoff) {
+      df_dr     = czero;
+      d2f_dr2   = czero;
+      return czero;
+    }
+    // ra = cutoff_buffer
+    // rb = cutoff
+    // S(r)          = 1/4 (1 + Cos[(π (r - ra)^2)/(-ra + rb)^2])^2
+    // dS(r)/dr      = -((π (r - ra) (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2])/(ra - rb)^2)
+    // d^2S(r)/dr^2  = (1/((ra - rb)^4))π (-2 π (r - ra)^2 Cos[( π (r - ra)^2)/(ra - rb)^2] (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) - (ra - rb)^2 (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2] + 2 π (r - ra)^2 Sin[(π (r - ra)^2)/(ra - rb)^2]^2)
+    // simplify:
+    // x = r-ra
+    // D = rb-ra
+    // B = Pi * (x/D)^2
+    // C = cos(B)
+    // S = sin(B)
+    // A = 1+C
+    // S(r) = 0.25 * A^2
+    // S'(r) = - Pi * x * A * S / D^2
+    // S''(r) = Pi / D^4 * ( 2 * Pi * x^2 * ( S^2 - C * A ) - D^2 * A * S )
+    const RealType cD      = (cutoff - cutoff_buffer);
+    const RealType x      = (r - cutoff_buffer);
+    const RealType cB      = M_PI * std::pow( x / cD , ctwo );
+    const RealType cC      = std::cos( cB );
+    const RealType cS      = std::sin( cB );
+    const RealType cA      = cone - cC;
+    const RealType two_pi_xsq = ctwo * M_PI * std::pow( x , ctwo ) ;
+    df_dr                 = - M_PI * x * cA * cS / std::pow( cD, ctwo );
+    d2f_dr2               = (std::pow( cS, ctwo ) - cC * cA ) ;
+    d2f_dr2              *= ctwo * M_PI * std::pow( x, ctwo ) ;
+    d2f_dr2              += - cA * cS * std::pow( cD, ctwo ) ;
+    d2f_dr2              *= M_PI / std::pow( cD, ctwo );
+    return cfourth * std::pow( cA, ctwo );
   }
 };
 
