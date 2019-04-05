@@ -632,7 +632,6 @@ struct HybridAdoptorBase
 
   inline RealType smooth_function(const ST& ra, const ST& rb, RealType r)
   {
-    const RealType cone(1), pi(3.1415926535897932384626433);
     if (r < ra) {
       return cone;
     }
