@@ -630,6 +630,7 @@ struct HybridAdoptorBase
     return RealType(-1);
   }
 
+/*
   inline RealType smooth_function(const ST& cutoff_buffer, const ST& cutoff, RealType r)
   {
     const RealType czero(0.0), cone(1), ctwo(2), chalf(0.5), cfourth(0.25), cfour(4);
@@ -648,29 +649,69 @@ struct HybridAdoptorBase
     // dS(r)/dr      = -((π (r - ra) (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2])/(ra - rb)^2)
     // d^2S(r)/dr^2  = (1/((ra - rb)^4))π (-2 π (r - ra)^2 Cos[( π (r - ra)^2)/(ra - rb)^2] (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) - (ra - rb)^2 (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2] + 2 π (r - ra)^2 Sin[(π (r - ra)^2)/(ra - rb)^2]^2)
     // simplify:
-    // x = r-ra
     // D = rb-ra
-    // B = Pi * (x/D)^2
-    // C = cos(B)
-    // S = sin(B)
-    // A = 1+C
-    // S(r) = 0.25 * A^2
-    // S'(r) = - Pi * x * A * S / D^2
-    // S''(r) = Pi / D^4 * ( 2 * Pi * x^2 * ( S^2 - C * A ) - D^2 * A * S )
     const RealType cD      = (cutoff - cutoff_buffer);
+    // x = r-ra
     const RealType x      = (r - cutoff_buffer);
+    // B = Pi * (x/D)^2
     const RealType cB      = M_PI * std::pow( x / cD , ctwo );
+    // C = cos(B)
     const RealType cC      = std::cos( cB );
+    // S = sin(B)
     const RealType cS      = std::sin( cB );
+    // A = 1+C
     const RealType cA      = cone + cC;
-    const RealType two_pi_xsq = ctwo * M_PI * std::pow( x , ctwo ) ;
+    // S'(r) = - Pi * x * A * S / D^2
     df_dr                 = - M_PI * x * cA * cS / std::pow( cD, ctwo );
+    // S''(r) = Pi / D^4 * ( 2 * Pi * x^2 * ( S^2 - C * A ) - D^2 * A * S )
     d2f_dr2               = (std::pow( cS, ctwo ) - cC * cA ) ;
     d2f_dr2              *= ctwo * M_PI * std::pow( x, ctwo ) ;
     d2f_dr2              += - cA * cS * std::pow( cD, ctwo ) ;
-    d2f_dr2              *= M_PI / std::pow( cD, ctwo );
+    d2f_dr2              *= M_PI / std::pow( cD, cfour );
+    // S(r) = 0.25 * A^2
     return cfourth * std::pow( cA, ctwo );
   }
+*/
+
+
+  inline RealType smooth_function(const ST& ra, const ST& rb, RealType r)
+  {
+    const RealType cone(1), pi(3.1415926535897932384626433);
+    if (r < ra) {
+      df_dr   = 0.0 ;
+      d2f_dr2 = 0.0 ;
+      return cone;
+    }
+    // ra = cutoff_buffer
+    // rb = cutoff
+    // S(r)          = 1/4 (1 + Cos[(π (r - ra)^2)/(-ra + rb)^2])^2
+    // dS(r)/dr      = -((π (r - ra) (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2])/(ra - rb)^2)
+    // d^2S(r)/dr^2  = (1/((ra - rb)^4))π (-2 π (r - ra)^2 Cos[( π (r - ra)^2)/(ra - rb)^2] (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) - (ra - rb)^2 (1 + Cos[(π (r - ra)^2)/(ra - rb)^2]) Sin[( π (r - ra)^2)/(ra - rb)^2] + 2 π (r - ra)^2 Sin[(π (r - ra)^2)/(ra - rb)^2]^2)
+    // simplify:
+    // x = r-ra
+    const RealType x  = (r  - ra) ;
+    const RealType x2 = x*x ;
+    // d = rb-ra
+    const RealType d  = (rb - ra) ;
+    const RealType d2 = d*d ;
+    // b = Pi * (x/d)^2
+    const RealType b = pi*x2/d2 ;
+    // cos_b = cos(b)
+    const RealType cos_b = std::cos( b );
+    // sin_b = sin(b)
+    const RealType sin_b = std::sin( b );
+    // a = 1 + cos_b
+    const RealType a = cone + cos_b ;
+    const RealType two_pi_xsq = 2.0*pi*x2 ;
+    const RealType pi_on_d4 = pi / (d2*d2) ;
+    // S'(r) = - Pi * x * a * sin_b / d^2
+    df_dr = - pi * x * a * sin_b / d2 ;
+    // S''(r) = Pi / d^4 * ( 2 * Pi * x^2 * ( sin_b ^2 - cos_b * a ) - d^2 * a * sin_b )
+    d2f_dr2 = pi_on_d4 * ( two_pi_xsq * ( sin_b*sin_b - cos_b * a ) - a * sin_b * d2 ;
+    // S(r) = 0.25 * A^2
+    return 0.25 * a2 ;
+  }
+
 };
 
 } // namespace qmcplusplus
