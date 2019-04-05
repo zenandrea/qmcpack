@@ -42,8 +42,6 @@ struct HybridCplxSoA : public BaseAdoptor, public HybridAdoptorBase<typename Bas
   using BaseAdoptor::myH;
   using BaseAdoptor::myL;
   using BaseAdoptor::myV;
-  using HybridBase::d2f_dr2;
-  using HybridBase::df_dr;
   using HybridBase::dist_dr;
   using HybridBase::dist_r;
 
@@ -176,11 +174,8 @@ struct HybridCplxSoA : public BaseAdoptor, public HybridAdoptorBase<typename Bas
       BaseAdoptor::evaluate_vgl(P, iat, psi, dpsi, d2psi);
       for (size_t i = 0; i < psi.size(); i++)
       {
-        d2psi[i] = d2psi_AO[i] * smooth_factor + d2psi[i] * (cone - smooth_factor) +
-            df_dr * rinv * ctwo * dot(dpsi[i] - dpsi_AO[i], dist_dr) +
-            (psi_AO[i] - psi[i]) * (d2f_dr2 + ctwo * rinv * df_dr);
-        dpsi[i] = dpsi_AO[i] * smooth_factor + dpsi[i] * (cone - smooth_factor) +
-            df_dr * rinv * dist_dr * (psi[i] - psi_AO[i]);
+        d2psi[i] = d2psi_AO[i] * smooth_factor + d2psi[i] * (cone - smooth_factor); 
+        dpsi[i] = dpsi_AO[i] * smooth_factor + dpsi[i] * (cone - smooth_factor);
         psi[i] = psi_AO[i] * smooth_factor + psi[i] * (cone - smooth_factor);
       }
     }
